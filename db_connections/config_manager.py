@@ -1,6 +1,8 @@
 """
-Módulo para gestión de configuración de bases de datos Oracle
-Lee parámetros de conexión desde variables de entorno (.env)
+config_manager.py
+
+Módulo de gestión de configuración de múltiples conexiones a bases de datos Oracle.
+Lee parámetros de conexión desde un archivo .env ubicado en la raíz del proyecto.
 """
 
 import os
@@ -8,53 +10,66 @@ from dotenv import load_dotenv
 from pathlib import Path
 from typing import Dict, Any
 
-# Cargar variables de entorno desde .env en el directorio raíz
-env_path = Path(__file__).parent.parent / '.env'
+# ----------------------------------------
+# 1. Carga de variables de entorno
+# ----------------------------------------
+# Asume que el .env está un nivel por encima de este archivo (en la raíz del proyecto)
+env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
+
+# ----------------------------------------
+# 2. Función auxiliar
+# ----------------------------------------
+def _leer_vars(prefijo: str) -> Dict[str, str]:
+    """
+    Lee y valida las variables de entorno para un prefijo dado.
+
+    Cada conexión espera las variables:
+        user_{PREFIJO}
+        password_{PREFIJO}
+        dsn_{PREFIJO}
+
+    Args:
+        prefijo (str): Sufijo que identifica el bloque de variables
+                        (por ejemplo, 'MEDIN' o 'Simbad').
+
+    Returns:
+        Dict[str, str]: Diccionario con las claves 'user', 'password' y 'dsn'.
+
+    Raises:
+        EnvironmentError: Si falta alguna de las variables esperadas.
+    """
+    # Nombres de las claves a leer
+    claves = ["user", "password", "dsn"]
+    # Construye un dict { 'user': os.getenv("user_PREFIJO"), ... }
+    valores = {k: os.getenv(f"{k}_{prefijo}") for k in claves}
+
+    # Detecta claves faltantes
+    faltantes = [k for k, v in valores.items() if not v]
+    if faltantes:
+        raise EnvironmentError(f"Faltan variables {faltantes} para '{prefijo}'")
+
+    return valores
+
+
+# ----------------------------------------
+# 3. Función pública
+# ----------------------------------------
 def cargar_configuracion() -> Dict[str, Dict[str, Any]]:
     """
-    Carga configuraciones de conexión desde variables de entorno
-    
+    Construye y devuelve la configuración de todas las conexiones configuradas.
+
+    Utiliza _leer_vars() para cada base de datos que queramos exponer.
+
     Returns:
-        Dict: Configuraciones de bases de datos con estructura:
-            {
-                'DB_ANTIGUA_1': {
-                    'user': ...,
-                    'password': ...,
-                    'dsn': ...,
-                    'encoding': ...,
-                },
-                ...
-            }
-    
+        Dict[str, Dict[str, Any]]: Mapeo de nombre de conexión a sus credenciales,
+                                   ej. { 'MEDIN': {...}, 'Simbad': {...} }.
+
     Raises:
-        EnvironmentError: Si faltan variables críticas
+        EnvironmentError: Si la lectura de variables falla en alguna conexión.
     """
-    config = {}
-    
-    # Configuración para primera base de datos
-    db1_config = {
-        'user': os.getenv("DB_ANTIGUA_1_USER"),
-        'password': os.getenv("DB_ANTIGUA_1_PASSWORD"),
-        'dsn': os.getenv("DB_ANTIGUA_1_DSN"),
-        'encoding': os.getenv("DB_ANTIGUA_1_ENCODING", "UTF-8")  # Valor por defecto
+    return {
+        "MEDIN": _leer_vars("MEDIN"),
+        "Simbad": _leer_vars("Simbad"),
     }
-    
-    # Configuración para segunda base de datos
-    db2_config = {
-        'user': os.getenv("DB_ANTIGUA_2_USER"),
-        'password': os.getenv("DB_ANTIGUA_2_PASSWORD"),
-        'dsn': os.getenv("DB_ANTIGUA_2_DSN"),
-        'encoding': os.getenv("DB_ANTIGUA_2_ENCODING", "UTF-8")
-    }
-    
-    # Validar configuraciones esenciales
-    for db_name, config_data in [('DB_ANTIGUA_1', db1_config), ('DB_ANTIGUA_2', db2_config)]:
-        if not all([config_data['user'], config_data['password'], config_data['dsn']]):
-            raise EnvironmentError(f"Faltan variables de entorno para {db_name}")
-    
-    config['DB_ANTIGUA_1'] = db1_config
-    config['DB_ANTIGUA_2'] = db2_config
-    
-    return config
