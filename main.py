@@ -3,6 +3,10 @@ import cx_Oracle
 
 
 def main():
+    """
+    Ejecuta una prueba de conexión a la base de datos MEDIN usando el context manager personalizado.
+    Realiza una consulta simple a DUAL para verificar la conectividad y maneja errores comunes.
+    """
     try:
         with medin_connection() as conn:
             cursor = conn.cursor()
@@ -15,10 +19,6 @@ def main():
         print("Error de conexión a Oracle:", db_err)
     except Exception as exc:
         print("Error inesperado:", exc)
-
-    except Exception as e:
-        pass
-
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ Función para inicializar logging de forma consistente en toda la aplicación.
 """
 
 import logging
+import logging.handlers
 from logging import Logger
 from pathlib import Path
 from typing import Optional

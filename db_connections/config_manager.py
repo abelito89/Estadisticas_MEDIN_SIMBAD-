@@ -3,6 +3,15 @@ config_manager.py
 
 Módulo de gestión de configuración de múltiples conexiones a bases de datos Oracle.
 Lee parámetros de conexión desde un archivo .env ubicado en la raíz del proyecto.
+
+Funciones principales:
+- cargar_configuracion(): Devuelve un diccionario con las configuraciones de conexión.
+- _leer_vars(prefijo): Lee y valida las variables de entorno para un prefijo dado.
+
+Uso:
+    from db_connections.config_manager import cargar_configuracion
+    config = cargar_configuracion()
+    # config['MEDIN'] -> credenciales de MEDIN
 """
 
 import os
